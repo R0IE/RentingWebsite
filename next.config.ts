@@ -1,7 +1,12 @@
-import type { NextConfig } from "next";
+import "dotenv/config"
+import { defineConfig } from "prisma/config"
 
-const nextConfig: NextConfig = {
-  /* config options here */
-};
-
-export default nextConfig;
+export default defineConfig({
+  schema: "prisma/schema.prisma",
+  migrations: {
+    path: "prisma/migrations",
+  },
+  datasource: {
+    url: "mysql://root@127.0.0.1:3306/Rental"
+  }
+})
