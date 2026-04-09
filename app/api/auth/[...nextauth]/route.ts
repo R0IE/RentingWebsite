@@ -29,6 +29,16 @@ const handler = NextAuth({
   session: {
     strategy: "jwt"
   },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user && (user as any).id) token.id = (user as any).id
+      return token
+    },
+    async session({ session, token }) {
+      if (token && (token as any).id) (session.user as any).id = (token as any).id
+      return session
+    }
+  },
   pages: {
     signIn: "/login", 
   }
