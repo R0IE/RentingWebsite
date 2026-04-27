@@ -44,6 +44,7 @@ export default async function PostPage({
     <div className="max-w-2xl mx-auto mt-10">
       <h1 className="text-2xl font-bold mb-4">Post Details</h1>
       <Post
+        id={post.id}
         title={post.title}
         description={post.description}
         price={post.price}

@@ -13,6 +13,8 @@ model User {
   password  String 
   name      String?
   createdAt DateTime @default(now())
+  image     String?
+  favorites Favorite[]
   posts     Post[]
 }
 
@@ -24,5 +26,18 @@ model Post {
   location    String
   ownerId     Int
   owner       User     @relation(fields: [ownerId], references: [id])
+  favorites   Favorite[]
   createdAt   DateTime @default(now())
+}
+
+model Favorite {
+  id     Int  @id @default(autoincrement())
+
+  userId Int
+  postId Int
+
+  user   User @relation(fields: [userId], references: [id])
+  post   Post @relation(fields: [postId], references: [id])
+
+  @@unique([userId, postId])
 }
