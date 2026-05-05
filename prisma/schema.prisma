@@ -6,38 +6,77 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
-  password  String 
+  password  String
   name      String?
   createdAt DateTime @default(now())
   image     String?
   favorites Favorite[]
-  posts     Post[]
+  listings  Listing[]
+  bookings  Booking[] 
 }
 
-model Post {
-  id          Int      @id @default(autoincrement())
+model Listing {
+  id          Int       @id @default(autoincrement())
   title       String
   description String
   price       Float
-  location    String
+  location    String  
+  latitude    Float?   
+  longitude   Float?
   ownerId     Int
-  owner       User     @relation(fields: [ownerId], references: [id])
+  categoryId  Int
+  owner       User      @relation(fields: [ownerId], references: [id])
+  category    Category  @relation(fields: [categoryId], references: [id])
+  images      ListingImage[]
   favorites   Favorite[]
-  createdAt   DateTime @default(now())
+  bookings    Booking[]
+  createdAt   DateTime  @default(now())
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  listings Listing[]
+}
+
+model ListingImage {
+  id        Int     @id @default(autoincrement())
+  url       String
+  order     Int     @default(0)  // for ordering/primary photo
+  listingId Int
+  listing   Listing @relation(fields: [listingId], references: [id])
+}
+
+model Booking {
+  id        Int      @id @default(autoincrement())
+  listingId Int
+  renterId  Int
+  startDate DateTime
+  endDate   DateTime
+  status    BookingStatus @default(PENDING)
+  listing   Listing  @relation(fields: [listingId], references: [id])
+  renter    User     @relation(fields: [renterId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([listingId, startDate, endDate])
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
 }
 
 model Favorite {
   id     Int  @id @default(autoincrement())
-
   userId Int
   postId Int
-
-  user   User @relation(fields: [userId], references: [id])
-  post   Post @relation(fields: [postId], references: [id])
+  user   User    @relation(fields: [userId], references: [id])
+  post   Listing @relation(fields: [postId], references: [id])
 
   @@unique([userId, postId])
 }

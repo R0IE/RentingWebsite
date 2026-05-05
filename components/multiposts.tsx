@@ -11,6 +11,8 @@ interface PostType {
   description: string;
   price: number;
   location: string;
+  images: { url: string; order: number }[];
+  category: { id: number; name: string };
 }
 
 export function MultiPosts() {
@@ -19,7 +21,7 @@ export function MultiPosts() {
 
   useEffect(() => {
     async function fetchPosts() {
-      const res = await fetch("/api/posts");
+      const res = await fetch("/api/listings");
       const data = await res.json();
       setPosts(data);
       setLoading(false);
@@ -34,7 +36,7 @@ export function MultiPosts() {
     <div className="max-w-7xl mx-auto px-4 mt-10">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">All Posts</h1>
-        <Link href="/posts">
+        <Link href="/listings">
           <Button>View all posts</Button>
         </Link>
       </div>
@@ -50,6 +52,8 @@ export function MultiPosts() {
               description={post.description}
               price={post.price}
               location={post.location}
+              images={post.images}
+              category={post.category}
             />
           ))}
         </div>

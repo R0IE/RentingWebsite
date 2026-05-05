@@ -9,11 +9,13 @@ interface PostProps {
   description: string;
   price: number;
   location: string;
+  images: { url: string; order: number }[];
+  category: { id: number; name: string };
 }
 
 // needs images , calendar dates 
 
-export default function Post({ id, title, description, price, location }: PostProps) {
+export default function Post({ id, title, description, price, location, images, category }: PostProps) {
   const [fav, setFav] = useState(false);
   const [loading, setLoading] = useState(false);
   const [count, setCount] = useState(0);
@@ -47,7 +49,16 @@ export default function Post({ id, title, description, price, location }: PostPr
   return (
     <div className="group relative bg-card rounded-2xl border border-border overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-primary/20">
       <div className="relative aspect-[4/3] overflow-hidden bg-muted flex items-center justify-center">
-        <span className="text-5xl">📦</span>
+        {images && images.length > 0 ? (
+          <img
+            src={images[0].url}
+            alt={title}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            No Image
+          </div>
+        )}
         <button
           onClick={toggleFavorite}
           disabled={loading}
@@ -75,6 +86,10 @@ export default function Post({ id, title, description, price, location }: PostPr
 
         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
           {description}
+        </p>
+
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+          {category.name}
         </p>
 
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">

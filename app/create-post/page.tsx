@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { MapPin, DollarSign, FileText, Tag } from "lucide-react";
+import { MapPin, DollarSign, FileText, Tag, LayoutGrid, ImagePlus, X } from "lucide-react";
+
+interface Category {
+  id: number;
+  name: string;
+}
 
 interface CreatePostPageProps {
   onClose?: () => void;
@@ -20,8 +25,35 @@ export default function CreatePostPage({ onClose }: CreatePostPageProps) {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [location, setLocation] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [images, setImages] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((res) => res.json())
+      .then(setCategories)
+      .catch(() => setError("Failed to load categories."));
+  }, []);
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (images.length + files.length > 5) {
+      setError("You can upload a maximum of 5 images.");
+      return;
+    }
+    setImages((prev) => [...prev, ...files]);
+    setPreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))]);
+  }
+
+  function removeImage(index: number) {
+    URL.revokeObjectURL(previews[index]);
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => prev.filter((_, i) => i !== index));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,12 +62,30 @@ export default function CreatePostPage({ onClose }: CreatePostPageProps) {
 
     const ownerId = Number(session?.user?.id);
     if (!session || !Number.isFinite(ownerId)) {
-      setError("You must be signed in to create a post.");
+      setError("You must be signed in to create a listing.");
       setLoading(false);
       return;
     }
 
-    const res = await fetch("/api/posts", {
+    // Upload images first (if any)
+    let imageUrls: string[] = [];
+    if (images.length > 0) {
+      const formData = new FormData();
+      images.forEach((img) => formData.append("files", img));
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!uploadRes.ok) {
+        setError("Image upload failed.");
+        setLoading(false);
+        return;
+      }
+      const { urls } = await uploadRes.json();
+      imageUrls = urls;
+    }
+
+    const res = await fetch("/api/listings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -44,6 +94,8 @@ export default function CreatePostPage({ onClose }: CreatePostPageProps) {
         price: parseFloat(price),
         location,
         ownerId,
+        categoryId: parseInt(categoryId),
+        imageUrls,
       }),
     });
 
@@ -51,10 +103,10 @@ export default function CreatePostPage({ onClose }: CreatePostPageProps) {
       if (onClose) {
         onClose();
       } else {
-        router.push("/posts");
+        router.push("/listings");
       }
     } else {
-      setError("Failed to create post.");
+      setError("Failed to create listing.");
       setLoading(false);
     }
   }
@@ -70,6 +122,8 @@ export default function CreatePostPage({ onClose }: CreatePostPageProps) {
 
       <div className="bg-card rounded-2xl border border-border p-6">
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+
+          {/* Title */}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-foreground flex items-center gap-2">
               <Tag className="w-4 h-4 text-muted-foreground" />
@@ -83,6 +137,7 @@ export default function CreatePostPage({ onClose }: CreatePostPageProps) {
             />
           </div>
 
+          {/* Description */}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-foreground flex items-center gap-2">
               <FileText className="w-4 h-4 text-muted-foreground" />
@@ -97,6 +152,7 @@ export default function CreatePostPage({ onClose }: CreatePostPageProps) {
             />
           </div>
 
+          {/* Price + Location */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground flex items-center gap-2">
@@ -120,12 +176,72 @@ export default function CreatePostPage({ onClose }: CreatePostPageProps) {
                 Location
               </label>
               <Input
-                placeholder="e.g. Saue Nurmesalu 5, Pärnu Tee 5"
+                placeholder="e.g. Saue, Pärnu mnt 5"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 required
               />
             </div>
+          </div>
+
+          {/* Category */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <LayoutGrid className="w-4 h-4 text-muted-foreground" />
+              Category
+            </label>
+            <select
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              required
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="">Select a category...</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Images */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <ImagePlus className="w-4 h-4 text-muted-foreground" />
+              Photos <span className="text-muted-foreground font-normal">(up to 5)</span>
+            </label>
+
+            {previews.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {previews.map((src, i) => (
+                  <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-border">
+                    <img src={src} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i)}
+                      className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 text-white hover:bg-black/80"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {images.length < 5 && (
+              <label className="flex items-center justify-center gap-2 border border-dashed border-border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors text-sm text-muted-foreground">
+                <ImagePlus className="w-4 h-4" />
+                Click to add photos
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleImageChange}
+                />
+              </label>
+            )}
           </div>
 
           {error && (
