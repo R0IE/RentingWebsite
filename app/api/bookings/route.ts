@@ -49,7 +49,21 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get("userId");
-    const mode = searchParams.get("mode"); 
+    const mode = searchParams.get("mode");
+    const listingId = searchParams.get("listingId");
+
+    // If listingId provided, return bookings for that listing
+    if (listingId) {
+      const bookingsForListing = await prisma.booking.findMany({
+        where: { listingId: parseInt(listingId) },
+        include: {
+          renter: { select: { id: true, name: true, image: true } },
+        },
+        orderBy: { startDate: "asc" },
+      });
+
+      return NextResponse.json(bookingsForListing);
+    }
 
     if (!userId) {
       return NextResponse.json({ error: "User ID required" }, { status: 400 });

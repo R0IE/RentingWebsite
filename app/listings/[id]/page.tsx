@@ -26,6 +26,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
       owner: true,
       category: true,
       images: { orderBy: { order: "asc" } },
+      bookings: true,
     },
   });
 

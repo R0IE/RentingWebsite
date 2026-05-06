@@ -41,20 +41,12 @@ export function Header() {
                 className="pl-10 bg-muted border-0 focus-visible:ring-1 focus-visible:ring-primary"
               />
             </div>
-            <Button variant="outline" size="sm" className="gap-2 shrink-0">
-              <MapPin className="w-4 h-4" />
-              <span className="hidden lg:inline">Location</span>
-            </Button>
           </div>
 
           <nav className="hidden md:flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowCreatePost(true)}
-            >
-              List an Item
-            </Button>
+            <Link href="/create-post" className="flex items-center gap-2">
+                <LayoutDashboard className="w-4 h-4" /> List a Item
+            </Link>
 
             {isLoggedIn ? (
               <DropdownMenu>
@@ -72,25 +64,22 @@ export function Header() {
                       <LayoutDashboard className="w-4 h-4" /> Dashboard
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard" className="flex items-center gap-2">
-                      <Package className="w-4 h-4" /> My Rentals
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
+                  {/* MAYBE LATER */}
+                  {/* <DropdownMenuItem asChild>
                     <Link href="/dashboard" className="flex items-center gap-2">
                       <Heart className="w-4 h-4" /> Favorites
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuSeparator /> */}
+                  {/* MAYBE LATER */}
+                  {/* <DropdownMenuItem asChild>
                     <Link href="/dashboard" className="flex items-center gap-2">
                       <Settings className="w-4 h-4" /> Settings
                     </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2 text-destructive">
+                  </DropdownMenuItem> */}
+                  {/* <DropdownMenuItem className="flex items-center gap-2 text-destructive">
                     <LogOut className="w-4 h-4" /> Sign Out
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (

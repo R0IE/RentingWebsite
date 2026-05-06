@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Header } from "@/components/header";
@@ -19,12 +19,37 @@ interface ItemProps {
 }
 
 export default function ItemDetailClient({ item }: ItemProps) {
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: new Date(),
-    to: addDays(new Date(), 2),
-  });
+  const [date, setDate] = useState<DateRange | undefined>(undefined);
   
   const [showBookingModal, setShowBookingModal] = useState(false);
+
+  const [bookings, setBookings] = useState<any[]>(item?.bookings || []);
+
+  useEffect(() => {
+    if (item?.bookings && item.bookings.length > 0) return;
+    if (!item?.id) return;
+
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/bookings?listingId=${item.id}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (mounted) setBookings(data || []);
+      } catch (err) {
+        // ignore
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [item?.id, item?.bookings]);
+
+  const bookedIntervals: { from: Date; to: Date }[] = (bookings || []).map((b: any) => ({
+    from: new Date(b.startDate),
+    to: new Date(b.endDate),
+  }));
 
   const calculatePrice = () => {
     if (!date?.from || !date?.to) return 0;
@@ -154,15 +179,24 @@ export default function ItemDetailClient({ item }: ItemProps) {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="end">
-                    <Calendar
-                      initialFocus
-                      mode="range"
-                      defaultMonth={date?.from}
-                      selected={date}
-                      onSelect={setDate}
-                      numberOfMonths={2}
-                      disabled={(date) => date < new Date()}
-                    />
+                        <Calendar
+                          initialFocus
+                          mode="range"
+                          defaultMonth={date?.from}
+                          selected={date}
+                          onSelect={setDate}
+                          numberOfMonths={2}
+                          disabled={(d: Date) => {
+                            const today = new Date()
+                            today.setHours(0, 0, 0, 0)
+                            if (d < today) return true
+                            return bookedIntervals.some((intv) => d >= intv.from && d <= intv.to)
+                          }}
+                          modifiers={{ booked: bookedIntervals }}
+                          modifiersStyles={{
+                            booked: { background: "rgba(239,68,68,0.95)", color: "white" },
+                          }}
+                        />
                   </PopoverContent>
                 </Popover>
               </div>
@@ -201,7 +235,12 @@ export default function ItemDetailClient({ item }: ItemProps) {
           <div className="p-1 space-y-4">
             <h2 className="text-2xl font-bold">Confirm Your Booking</h2>
             <p className="text-muted-foreground">
-                You're about to book <span className="font-semibold">{item.title}</span> from <span className="font-semibold">{format(date?.from!, "LLL dd, yyyy")}</span> to <span className="font-semibold">{format(date?.to!, "LLL dd, yyyy")}</span>.
+                You're about to book <span className="font-semibold">{item.title}</span>{' '}
+                {date?.from && date?.to ? (
+                  <>from <span className="font-semibold">{format(date.from, "LLL dd, yyyy")}</span> to <span className="font-semibold">{format(date.to, "LLL dd, yyyy")}</span>.</>
+                ) : (
+                  <span className="font-semibold">— please select dates</span>
+                )}
             </p>
             <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground underline">
@@ -213,19 +252,8 @@ export default function ItemDetailClient({ item }: ItemProps) {
                 <span>Total</span>
                 <span>${totalPrice}</span>
             </div>
-            <Button className="w-full py-6 mt-6" onClick={() => {
-                handleConfirmBooking();
-                <Alert className="max-w-md">
-                    <CheckCircle2Icon />
-                    <AlertTitle>Account updated successfully</AlertTitle>
-                    <AlertDescription>
-                        Your profile information has been saved. Changes will be reflected
-                        immediately.
-                    </AlertDescription>
-                </Alert>
-                setShowBookingModal(false);
-            }}>
-                Confirm Booking
+            <Button className="w-full py-6 mt-6" onClick={handleConfirmBooking} disabled={!date?.from || !date?.to}>
+              Confirm Booking
             </Button>
           </div>
         </DialogContent>
