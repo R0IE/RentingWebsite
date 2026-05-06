@@ -43,11 +43,19 @@ export default function Post({ id, title, description, price, location, images, 
   };
 
   async function viewPost() {
-    // adding this later on
+    window.location.href = `/listings/${id}`;
   }
 
+  const Element = document.querySelector(`#post-${id}`)
+
+  document.addEventListener("click", (e) => {
+    if (Element && Element.contains(e.target as Node)) {
+      viewPost();
+    }
+  });
+
   return (
-    <div className="group relative bg-card rounded-2xl border border-border overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-primary/20">
+    <div id = {`post-${id}`} className="group relative bg-card rounded-2xl border border-border overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-primary/20">
       <div className="relative aspect-[4/3] overflow-hidden bg-muted flex items-center justify-center">
         {images && images.length > 0 ? (
           <img
